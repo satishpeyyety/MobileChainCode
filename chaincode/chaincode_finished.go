@@ -61,7 +61,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	return nil, errors.New("Received unknown function invocation: " + function)
 }
 
-func (t *SimpleChainCode) registerconsent(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
+func (t *SimpleChaincode) registerconsent(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
 
         var key, value string
 	var err error
