@@ -40,11 +40,6 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
 
-	err := stub.PutState("hello_world", []byte(args[0]))
-	if err != nil {
-		return nil, err
-	}
-
 	return nil, nil
 }
 
@@ -53,15 +48,38 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	fmt.Println("invoke is running " + function)
 
 	// Handle different functions
-	if function == "init" {
-		return t.Init(stub, "init", args)
+	if function == "registerconsent" {
+		return t.registerconsent(stub,args)
 	} else if function == "write" {
 		return t.write(stub, args)
-	}
+	} else if function == "callerdata" {
+	       fmt.Println(t.get_caller_data(stub))
+	        return nil,nil
+	} 
 	fmt.Println("invoke did not find func: " + function)
 
 	return nil, errors.New("Received unknown function invocation: " + function)
 }
+
+func (t *SimpleChainCode) registerconsent(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
+
+        var key, value string
+	var err error
+	fmt.Println("running write()")
+
+	if len(args) != 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2. name of the key and value to set")
+	}
+
+	key = args[0] //CustomerID
+	value = args[1] // json string with contract and agreement details
+	err = stub.PutState(key, []byte(value)) //write the variable into the chaincode state
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
 
 // Query is our entry point for queries
 func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
@@ -72,6 +90,7 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		return t.read(stub, args)
 	}
 	fmt.Println("query did not find func: " + function)
+	
 
 	return nil, errors.New("Received unknown function query: " + function)
 }
@@ -113,3 +132,37 @@ func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) 
 
 	return valAsbytes, nil
 }
+
+
+
+func (t *SimpleChaincode) get_username(stub shim.ChaincodeStubInterface) (string, error) {
+
+    username, err := stub.ReadCertAttribute("username");
+	if err != nil { return "", errors.New("Couldn't get attribute 'username'. Error: " + err.Error()) }
+	return string(username), nil
+}
+
+func (t *SimpleChaincode) check_affiliation(stub shim.ChaincodeStubInterface) (string, error) {
+    affiliation, err := stub.ReadCertAttribute("role");
+	if err != nil { return "", errors.New("Couldn't get attribute 'role'. Error: " + err.Error()) }
+	return string(affiliation), nil
+
+}
+
+func (t *SimpleChaincode) get_caller_data(stub shim.ChaincodeStubInterface) (string, string, error){
+
+	user, err := t.get_username(stub)
+
+    // if err != nil { return "", "", err }
+
+	// ecert, err := t      .get_ecert(stub, user);
+
+    // if err != nil { return "", "", err }
+
+	affiliation, err := t.check_affiliation(stub);
+
+    if err != nil { return "", "", err }
+
+	return user, affiliation, nil
+}
+
